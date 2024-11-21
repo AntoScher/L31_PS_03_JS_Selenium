@@ -66,14 +66,24 @@ def go_to_section(driver, section_index):
 
 def main():
     query = input("Введите первоначальный поисковый запрос: ")
+    if query.lower() == "выход":
+        print("Выход из программы...")
+        return
     driver = search_wikipedia(query)
     
     print("\nСодержание текущей статьи:")
     contents = print_contents(driver)
     
     if contents:
-        section_choice = input("Введите номер раздела, к которому хотите перейти (например, 1 или 2.1): ")
-        go_to_section(driver, section_choice)
+        section_choice = input("Введите номер раздела, к которому хотите перейти (например, 1 или 2.1) или 'назад' для возврата: ")
+        if section_choice.lower() == "выход":
+            print("Выход из программы...")
+            driver.quit()
+            return
+        elif section_choice.lower() == "назад":
+            return main()
+        else:
+            go_to_section(driver, section_choice)
     
     while True:
         print("\nЧто бы вы хотели сделать дальше?")
@@ -87,8 +97,14 @@ def main():
             print_paragraphs(driver)
         elif choice == "2":
             print_links(driver)
-            link_choice = input("Введите номер ссылки, по которой хотите перейти: ")
-            if link_choice.isdigit():
+            link_choice = input("Введите номер ссылки, по которой хотите перейти, 'назад' для возврата или 'выход' для завершения программы: ")
+            if link_choice.lower() == "выход":
+                driver.quit()
+                print("Выход из программы...")
+                break
+            elif link_choice.lower() == "назад":
+                continue
+            elif link_choice.isdigit():
                 link_choice = int(link_choice) - 1
                 links = driver.find_elements(By.CSS_SELECTOR, "a[href^='/wiki/']")
                 if link_choice < len(links):
@@ -97,8 +113,15 @@ def main():
                     print("\nСодержание новой статьи:")
                     contents = print_contents(driver)
                     if contents:
-                        section_choice = input("Введите номер раздела, к которому хотите перейти (например, 1 или 2.1): ")
-                        go_to_section(driver, section_choice)
+                        section_choice = input("Введите номер раздела, к которому хотите перейти (например, 1 или 2.1) или 'назад' для возврата: ")
+                        if section_choice.lower() == "выход":
+                            driver.quit()
+                            print("Выход из программы...")
+                            break
+                        elif section_choice.lower() == "назад":
+                            continue
+                        else:
+                            go_to_section(driver, section_choice)
                 else:
                     print("Номер ссылки вне диапазона.")
             else:
