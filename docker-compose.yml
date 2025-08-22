@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  wikipedia-navigator:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+    environment:
+      - PYTHONPATH=/app
+      - DISPLAY=:99
+    command: ["api"]
+    restart: unless-stopped
+
+  wikipedia-navigator-cli:
+    build: .
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+    environment:
+      - PYTHONPATH=/app
+      - DISPLAY=:99
+    command: ["cli"]
+    stdin_open: true
+    tty: true
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:

@@ -1,19 +1,63 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
+from webdriver_manager.chrome import ChromeDriverManager
+from cache_manager import cache_search_results, cache_navigation_results
 import time
+import sys
 
+def create_driver():
+    """Создает драйвер с улучшенными настройками"""
+    try:
+        service = Service(ChromeDriverManager().install())
+        options = webdriver.ChromeOptions()
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--window-size=1920,1080')
+        
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
+        return driver
+    except Exception as e:
+        print(f"Ошибка при инициализации браузера: {e}")
+        print("Убедитесь, что у вас установлен Google Chrome")
+        return None
+
+@cache_search_results(ttl=3600)
 def search_wikipedia(query):
-    driver = webdriver.Chrome()
-    driver.get("https://www.wikipedia.org/")
+    driver = create_driver()
+    if driver is None:
+        return None
     
-    search_box = driver.find_element(By.NAME, "search")
-    search_box.send_keys(query)
-    search_box.send_keys(Keys.RETURN)
-    
-    time.sleep(3)
-    
-    return driver
+    try:
+        driver.get("https://www.wikipedia.org/")
+        
+        # Ждем появления поисковой строки
+        wait = WebDriverWait(driver, 10)
+        search_box = wait.until(EC.presence_of_element_located((By.NAME, "search")))
+        
+        search_box.clear()
+        search_box.send_keys(query)
+        search_box.send_keys(Keys.RETURN)
+        
+        # Ждем загрузки результатов
+        time.sleep(3)
+        
+        return driver
+    except TimeoutException:
+        print("Превышено время ожидания загрузки страницы")
+        driver.quit()
+        return None
+    except Exception as e:
+        print(f"Ошибка при поиске: {e}")
+        driver.quit()
+        return None
 
 def print_paragraphs(driver):
     paragraphs = driver.find_elements(By.TAG_NAME, "p")
@@ -70,6 +114,10 @@ def main():
         print("Выход из программы...")
         return
     driver = search_wikipedia(query)
+    
+    if driver is None:
+        print("Не удалось инициализировать браузер. Программа завершается.")
+        return
     
     print("\nСодержание текущей статьи:")
     contents = print_contents(driver)
